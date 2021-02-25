@@ -16,7 +16,7 @@ trait Check
     public function CheckIfExist ($col,$val,$table)
   {
     // query
-    $query = "SELECT '$col' FROM $table WHERE $col = '$val' ";
+    $query = "SELECT '$col' FROM $table WHERE $col = '$val' AND isDeleted = 0 ";
 
     // execute
     $Check = $this->db->link->query($query);

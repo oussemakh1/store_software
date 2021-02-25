@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\{ Interfaces\ICrud, traits\Check, traits\Data };
+use App\{ Interfaces\ICrud, traits\Crud, traits\Check, traits\Data };
 
 
 class Product implements ICrud
@@ -11,6 +11,7 @@ class Product implements ICrud
     // traits
     use Check;
     use Data;
+    use Crud;
 
     // proprites
     private $db;
@@ -71,82 +72,29 @@ class Product implements ICrud
 
     public function list()
     {
-        $data = $this->db->select("products","none","none","id","DESC");
-
-        if($data) {
-          return $data;
-        } else {
-          return false;
-        }
+        return $this->list_data("product","id","DESC",$this->db);
     }
 
     public function store($data)
     {
-
-      // preapre Data
-      $this->prepare_data($data);
-
-     // check if exist
-       $Exist = $this->CheckIfExist("name", $this->name, "products");
-       if($Exist == false) {
-         $insert = $this->db->insert("products",$data,$this->args);
-         if($insert) {
-           return true;
-         } else {
-           return false;
-         }
-
-       } else {
-         return false;
-       }
-
-
+        $this->prepare_data($data);
+        return $this->store_data("products","name",$this->name,$this->args,$data,$this->db);
     }
 
     public function edit($id)
     {
-        $data = $this->db->select("products","id", $id, "id", "DESC");
-
-        if($data) {
-          return $data;
-        } else {
-          return false;
-        }
+        return $this->edit_data("products","id",$id,"id","DESC",$this->db);
     }
 
     public function update($by,$val,$data)
     {
-      // prepare Data
-      $this->prepare_data($data);
-
-      $Check = $this->CheckIfExist($by,$val,'products');
-
-      if($Check == true) {
-
-          // update
-          $update = $this->db->update('products',$data,$by,$val,$this->args);
-
-          if($update) {
-              return true;
-          } else {
-              return false;
-          }
-
-      } else {
-          return false;
-      }
+        $this->prepare_data($data);
+        return $this->update_data("products",$by,$val,$data,$this->args,$this->db);
     }
 
     public function delete($by,$value)
     {
-      $delete = $this->db->delete("products", $by, $value);
-
-      if($delete) {
-        return true;
-      } else {
-        return false;
-      }
-
+        return $this->delete_data("products",$by,$value,$this->db);
     }
 
 }

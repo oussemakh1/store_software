@@ -1,15 +1,9 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: Oussema
- * Date: 2/1/2021
- * Time: 6:22 PM
- */
 
 namespace App\Models;
 
-use App\{ Interfaces\ICrud, traits\Check, traits\Data };
-
+use App\{ Interfaces\ICrud, traits\Crud,traits\Check, traits\Data };
+use App\Features\Order\Feature01 as OrderFeature01;
 
 class Order implements  ICrud
 {
@@ -17,10 +11,12 @@ class Order implements  ICrud
     // traits
     use Check;
     use Data;
+    use Crud;
 
     // proprites
     private $db;
     private $args;
+    private $OrderFeature01;
 
     private $client_id;
     private $products;
@@ -28,11 +24,13 @@ class Order implements  ICrud
     private $discount;
     private $vat;
     private $total;
+    private $status;
 
 
     public function __construct($db)
     {
         $this->db = $db;
+        $this->OrderFeature01 = new OrderFeature01();
     }
 
     private function prepare_data($raw_data)
@@ -45,6 +43,7 @@ class Order implements  ICrud
         $this->discount = $data['discount'];
         $this->vat = $data['vat'];
         $this->total = $data['total'];
+        $this->status = $data['status'];
 
         $this->args = [
 
@@ -53,7 +52,8 @@ class Order implements  ICrud
             $this->quantities,
             $this->discount,
             $this->vat,
-            $this->total
+            $this->total,
+            $this->status
 
         ];
     }
@@ -61,66 +61,58 @@ class Order implements  ICrud
 
     public function list()
     {
-        return $this->db->select("orders","none","none","id","DESC");
+        return $this->list_data("orders","id","DESC",$this->db);
     }
 
     public function store($data)
     {
+        // do insert order
         $this->prepare_data($data);
+        $this->store_data("orders","none","none",$this->args,$data,$this->db);
 
-        $insert = $this->db->insert("orders",$data,$this->args);
+        // do single order insert
+        $order_id = $this->db->link->lastInsertId();
+        $order_type = $this->OrderFeature01->CheckOrderType($this->client_id,$this->db);
+        $order_data = $this->OrderFeature01->prepareSingleOrder($order_type,$order_id,$data,$this->db);
 
-        if($insert) {
-            return true;
-        } else {
-            return false;
-        }
+        $this->OrderFeature01->insertSingleOrder($order_data,$order_type,$this->db);
+
+        // do final order setup
+        return $this->OrderFeature01->setUpOrder($order_type,$order_id,$this->vat,$this->discount,$this->db);
     }
 
 
     public function edit($id)
     {
-        $Check = $this->CheckIfExist("id",$id,"orders");
-        if($Check == true) {
-            $edit = $this->db->select("orders","id",$id,"id","DESC");
-            if($edit) {
-                return true;
-            } else {
-                return false;
-            }
-        } else {
-            return false;
-        }
+        return $this->edit_data("orders","id",$id,"id","DESC",$this->db);
     }
 
     public function update($by, $val, $data)
     {
+        // do update order
         $this->prepare_data($data);
+        $this->update_data("orders",$by,$val,$data,$this->args,$this->db);
 
-        $Check = $this->CheckIfExist($by,$val,"orders");
-        if($Check == true){
+        // do update single order
+        $order_id = $this->db->link->query("SELECT id FROM orders WHERE $by = '$val'")->fetch();
+        $order_type = $this->OrderFeature01->CheckOrderType($this->client_id,$this->db);
+        $order_data = $this->OrderFeature01->prepareSingleOrder($order_type,$order_id,$data,$this->db);
 
-            $update = $this->db->update("orders",$data,$by,$val,$this->args);
-            if($update) {
-                return true;
-            } else {
-                return false;
-            }
-        }else {
-            return false;
-        }
+        $this->OrderFeature01->updateSingleOrder($order_data,$order_type,$this->db);
+
+        // do final order setup
+        return $this->OrderFeature01->setUpOrder($order_type,$order_id,$this->vat,$this->discount,$this->db);
     }
 
     public function delete($by, $value)
     {
-        $Check = $this->CheckIfExist($by,$value,"orders");
-        if($Check == true) {
-            $delete = $this->db->delete("orders",$by,$value);
-            if($delete) {
-                return true;
-            } else {
-                return false;
-            }
-        }
+        // do delete single order
+        $client_id = $this->db->link->query("SELECT client_id FROM orders WHERE $by = '$value'")->fetch();
+        $order_type = $this->OrderFeature01->CheckOrderType($client_id,$this->db);
+        $order_id = $this->db->link->query("SELECT id FROM orders WHERE $by = '$value'")->fetch();
+        $this->OrderFeature01->deleteSingleOrder($order_id,$order_type,$this->db);
+
+        // do delete order
+        $this->delete_data("orders",$by,$value,$this->db);
     }
 }

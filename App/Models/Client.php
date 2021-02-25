@@ -3,13 +3,14 @@
 
 namespace App\Models;
 
-use App\{ Interfaces\ICrud, traits\Check, traits\Data };
+use App\{ Interfaces\ICrud, traits\Crud,traits\Check, traits\Data };
 
 class Client implements  ICrud
 {
     // traits
     use Check;
     use Data;
+    use Crud;
 
     // proprites
     private $db;
@@ -57,68 +58,28 @@ class Client implements  ICrud
 
     public function list()
     {
-        return $this->db->select("clients","none","none","id","DESEC");
+        return $this->list_data("clients","id","DESC",$this->db);
     }
 
     public function store($data)
     {
         $this->prepare_data($data);
-
-        $Check = $this->CheckIfExist("phone",$this->phone,"clients");
-
-        if($Check == false) {
-
-            $insert = $this->db->insert("clients",$data,$this->args);
-            if($insert) {
-                return true;
-            } else {
-                return false;
-            }
-
-        } else {
-            return false;
-        }
+        return $this->store_data("clients","phone",$this->phone,$this->args,$data,$this->db);
     }
 
     public function edit($id)
     {
-        return $this->db->select("clients","id",$id,"none","none");
+        return $this->edit_data("clients","id",$id,"DESC",$this->db);
     }
 
     public function update($by, $val, $data)
     {
         $this->prepare_data($data);
-
-        $Check = $this->CheckIfExist($by,$val,"clients");
-
-        if($Check == true) {
-
-            $update = $this->db->update("clients",$data,$by,$val,$this->args);
-            if($update) {
-                return true;
-            } else {
-                return false;
-            }
-
-        } else {
-            return false;
-        }
+        return $this->update_data("clients",$by,$val,$data,$this->args,$this->db);
     }
 
     public function delete($by, $value)
     {
-        $Check = $this->CheckIfExist($by,$value,"clients");
-
-        if($Check == true) {
-
-            $delete = $this->db->delete("clients",$by,$value);
-            if($delete) {
-                return true;
-            } else {
-                return false;
-            }
-        } else {
-            return false;
-        }
+        return $this->delete_data("clients",$by,$value,$this->db);
     }
 }

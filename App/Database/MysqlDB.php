@@ -84,10 +84,10 @@ class MysqlDB implements dbManager
 
         if($where == 'none') {
           // query
-          $query = "SELECT * FROM $table ORDER BY $by $option";
+          $query = "SELECT * FROM $table  WHERE isDeleted = 0 ORDER BY $by $option";
         } else {
           // query
-          $query = "SELECT * FROM $table WHERE $where = '$val' ORDER BY $by $option";
+          $query = "SELECT * FROM $table WHERE $where = '$val' AND isDeleted = 0 ORDER BY $by $option";
         }
 
         $stmt = $this->link->query($query);
@@ -98,6 +98,28 @@ class MysqlDB implements dbManager
         }
 
     }
+
+    public function selectByOperator ($table,$col,$op,$val,$by,$option)
+    {
+
+        if($by == 'none')
+            $by = "id";
+        if($option == 'none')
+            $option = "DESC";
+
+
+        $query = "SELECT * FROM $table WHERE $col $op '$val' ORDER BY $by $option";
+
+
+        $stmt = $this->link->query($query);
+        if($stmt->rowCount() >0) {
+            return $stmt->fetchAll();
+        } else {
+            return false;
+        }
+
+    }
+
 
     public function update ($table, $data, $by, $value, $args)
     {
@@ -124,6 +146,20 @@ class MysqlDB implements dbManager
 
     }
 
+    public function soft_delete($table,$by,$val)
+    {
+        // query
+        $query = "UPDATE $table SET isDeleted = 1 WHERE $by = '$val'";
+
+        $stmt = $this->link->query($query);
+
+        if($stmt->rowCount() >0) {
+            return $stmt;
+        } else {
+            return false;
+        }
+    }
+
     public function delete ($table, $by, $val)
     {
         // query
@@ -137,6 +173,20 @@ class MysqlDB implements dbManager
             return false;
         }
 
+    }
+
+
+    public function search($table, $by, $val)
+    {
+        //query
+        $query = "SELECT * FROM $table WHERE $by LIKE '%$val%'";
+
+        $stmt = $this->link->query($query);
+        if($stmt->rowCount() > 0) {
+            return $stmt->fetchAll();
+        } else {
+            return false;
+        }
     }
 
 
